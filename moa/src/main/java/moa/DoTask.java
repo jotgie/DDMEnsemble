@@ -107,6 +107,9 @@ public class DoTask {
                     cliString.append(" ").append(args[i]);
                 }
                 // parse options
+                System.out.println("Working Directory = " +
+                        System.getProperty("user.dir"));
+                System.out.println(cliString.toString());
                 Task task = (Task) ClassOption.cliStringToObject(cliString.toString(), Task.class, extraOptions);
                 Object result = null;
                 if (suppressStatusOutputOption.isSet()) {

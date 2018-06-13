@@ -94,14 +94,14 @@ public class DDM extends AbstractOptionHandler implements DriftDetectionMethod {
 
 
         if (m_n > minNumInstancesOption.getValue() && m_p + m_s > m_pmin + 3 * m_smin) {
-            System.out.println(m_p + ",D");
+//            System.out.println(m_p + ",D");
             initialize();
             return DDM_OUTCONTROL_LEVEL;
         } else if (m_p + m_s > m_pmin + 2 * m_smin) {
-            System.out.println(m_p + ",W");
+//            System.out.println(m_p + ",W");
             return DDM_WARNING_LEVEL;
         } else {
-            System.out.println(m_p + ",N");
+//            System.out.println(m_p + ",N");
             return DDM_INCONTROL_LEVEL;
         }
     }
