@@ -105,30 +105,36 @@ public class VoteDDM extends AbstractOptionHandler implements DriftEnsembleDetec
                 m_psmin[i] = m_p[i] + m_s[i];
             }
         }
-        detNumber = 4;
-        int outcontrolNumber = 0;
-        int incontrolNumber = 0;
-        int warningNumber = 0;
+        int outcontrolCounter = 0;
+        int incontrolCounter = 0;
+        int warningCounter = 0;
         for (int i = 0; i < detNumber; i++) {
             if (m_n > minNumInstancesOption.getValue() && m_p[i] + m_s[i] > m_pmin[i] + 3 * m_smin[i]) {
-                outcontrolNumber++;
+                outcontrolCounter++;
             } else if (m_p[i] + m_s[i] > m_pmin[i] + 2 * m_smin[i]) {
-                warningNumber++;
+                warningCounter++;
             } else {
-                incontrolNumber++;
+                incontrolCounter++;
             }
         }
 
-        if (outcontrolNumber > incontrolNumber) {
-            System.out.println("D");
-            initialize();
-            return DDM_OUTCONTROL_LEVEL;
-        } else if (warningNumber > outcontrolNumber) {
-            System.out.println("W");
-            return DDM_WARNING_LEVEL;
+        if (incontrolCounter > outcontrolCounter) {
+            if (incontrolCounter > warningCounter) {
+                System.out.println("N");
+                return DDM_INCONTROL_LEVEL;
+            } else {
+                System.out.println("W");
+                return DDM_WARNING_LEVEL;
+            }
         } else {
-            System.out.println("N");
-            return DDM_INCONTROL_LEVEL;
+             if (outcontrolCounter > warningCounter) {
+                 System.out.println("D");
+                 initialize();
+                 return DDM_OUTCONTROL_LEVEL;
+             } else {
+                 System.out.println("W");
+                 return DDM_WARNING_LEVEL;
+             }
         }
     }
 

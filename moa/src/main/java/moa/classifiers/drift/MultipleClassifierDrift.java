@@ -2,9 +2,9 @@ package moa.classifiers.drift;
 
 import moa.classifiers.AbstractClassifier;
 import moa.classifiers.Classifier;
+import moa.classifiers.core.driftdetection.AccDDM;
 import moa.classifiers.core.driftdetection.DriftDetectionMethod;
 import moa.classifiers.core.driftdetection.DriftEnsembleDetectionMethod;
-import moa.classifiers.core.driftdetection.MultipleDDM;
 import moa.classifiers.meta.WEKAClassifier;
 import moa.core.Measurement;
 import moa.core.Utils;
@@ -12,13 +12,17 @@ import moa.options.ClassOption;
 import samoa.instances.Instance;
 import samoa.instances.SingleLabelInstance;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
 public class MultipleClassifierDrift extends AbstractClassifier {
 
-    private static final int ATTR_NUMBER = 20;
+    private static final int ATTR_NUMBER = 7;
     private int detNumber;
     private static final int ATTR_IN_ENSEMBLE = 2;
 
@@ -26,20 +30,22 @@ public class MultipleClassifierDrift extends AbstractClassifier {
     public ClassOption baseLearnerOption = new ClassOption("baseLearner", 'l',
             "Classifier to train.", Classifier.class, "bayes.SelectiveNaiveBayes");
     public ClassOption driftDetectionMethodOption = new ClassOption("driftDetectionMethod", 'd',
-            "Drift detection method to use.", DriftEnsembleDetectionMethod.class, "MultipleDDM");
+            "Drift detection method to use.", DriftEnsembleDetectionMethod.class, "AccDDM");
     protected Classifier classifier;
     protected Classifier newclassifier;
-    protected MultipleDDM driftDetectionMethod;
+    protected AccDDM driftDetectionMethod;
     protected boolean newClassifierReset;
     protected int ddmLevel;
     protected int changeDetected = 0;
     protected int warningDetected = 0;
     //protected int numberInstances = 0;
     private int[][] attrToClassify;
+    private static StringBuilder sb;
 
     {
         detNumber = (ATTR_NUMBER - 1) * ATTR_NUMBER / 2;
-        setBrute();
+        setRandom();    // lub setBrute() - generowanie permutacji podprzestrzeni cech
+        sb = new StringBuilder();
     }
 
     @Override
@@ -61,7 +67,7 @@ public class MultipleClassifierDrift extends AbstractClassifier {
         this.newclassifier = this.classifier.copy();
         this.classifier.resetLearning();
         this.newclassifier.resetLearning();
-        driftDetectionMethod = new MultipleDDM();
+        driftDetectionMethod = new AccDDM();
 
         this.newClassifierReset = false;
     }
@@ -99,6 +105,7 @@ public class MultipleClassifierDrift extends AbstractClassifier {
                     newClassifierReset = false;
                 }
                 this.newclassifier.trainOnInstance(inst);
+                sb.append("W\n");
                 break;
 
             case DriftDetectionMethod.DDM_OUTCONTROL_LEVEL:
@@ -112,12 +119,14 @@ public class MultipleClassifierDrift extends AbstractClassifier {
                 }
                 this.newclassifier = ((Classifier) getPreparedClassOption(this.baseLearnerOption)).copy();
                 this.newclassifier.resetLearning();
+                sb.append("D\n");
                 break;
 
             case DriftDetectionMethod.DDM_INCONTROL_LEVEL:
                 //System.out.println("0 0 I");
                 //System.out.println("DDM_INCONTROL_LEVEL");
                 newClassifierReset = true;
+                sb.append("N\n");
                 break;
             default:
                 //System.out.println("ERROR!");
@@ -129,7 +138,7 @@ public class MultipleClassifierDrift extends AbstractClassifier {
 
     private void setBrute() {
         attrToClassify = new int[detNumber][ATTR_IN_ENSEMBLE];
-        permute(0, 1, 0);
+        permute(0, 1, 0);   // loop could be used, but I love recursion
     }
 
     private void setRandom() {
@@ -190,8 +199,25 @@ public class MultipleClassifierDrift extends AbstractClassifier {
                 measurementList.add(measurement);
             }
         }
+        write(sb.toString());
         this.changeDetected = 0;
         this.warningDetected = 0;
         return measurementList.toArray(new Measurement[measurementList.size()]);
     }
+
+
+    private void write(String text) {
+        PrintWriter out = null;
+        try {
+            String outputPath = "./src/main/resources/results_analysis/results";
+            out = new PrintWriter(new FileOutputStream(new File(outputPath, "detectionResult.txt")), true);
+            out.println(text);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            if (out != null)
+                out.close();
+        }
+    }
+
 }

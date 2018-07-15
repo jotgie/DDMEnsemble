@@ -19,16 +19,21 @@
  */
 package moa.classifiers.drift;
 
-import moa.classifiers.meta.WEKAClassifier;
-import java.util.LinkedList;
-import java.util.List;
 import moa.classifiers.AbstractClassifier;
 import moa.classifiers.Classifier;
 import moa.classifiers.core.driftdetection.DriftDetectionMethod;
+import moa.classifiers.meta.WEKAClassifier;
 import moa.core.Measurement;
+import moa.core.Utils;
 import moa.options.ClassOption;
 import samoa.instances.Instance;
-import moa.core.Utils;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Class for handling concept drift datasets with a wrapper on a
@@ -69,6 +74,7 @@ public class SingleClassifierDrift extends AbstractClassifier {
     //protected int numberInstances = 0;
 
     protected int ddmLevel;
+    private static StringBuilder sb = new StringBuilder();
 
     public boolean isWarningDetected() {
         return (this.ddmLevel == DriftDetectionMethod.DDM_WARNING_LEVEL);
@@ -114,6 +120,7 @@ public class SingleClassifierDrift extends AbstractClassifier {
                     newClassifierReset = false;
                 }
                 this.newclassifier.trainOnInstance(inst);
+                sb.append("W\n");
                 break;
 
             case DriftDetectionMethod.DDM_OUTCONTROL_LEVEL:
@@ -127,12 +134,14 @@ public class SingleClassifierDrift extends AbstractClassifier {
                 }
                 this.newclassifier = ((Classifier) getPreparedClassOption(this.baseLearnerOption)).copy();
                 this.newclassifier.resetLearning();
+                sb.append("D\n");
                 break;
 
             case DriftDetectionMethod.DDM_INCONTROL_LEVEL:
                 //System.out.println("0 0 I");
             	//System.out.println("DDM_INCONTROL_LEVEL");
                 newClassifierReset = true;
+                sb.append("N\n");
                 break;
             default:
             //System.out.println("ERROR!");
@@ -167,9 +176,23 @@ public class SingleClassifierDrift extends AbstractClassifier {
                 measurementList.add(measurement);
             }
         }
+        write(sb.toString());
         this.changeDetected = 0;
         this.warningDetected = 0;
         return measurementList.toArray(new Measurement[measurementList.size()]);
     }
 
+    private void write(String text) {
+        PrintWriter out = null;
+        try {
+            String outputPath = "./src/main/resources/results_analysis/results";
+            out = new PrintWriter(new FileOutputStream(new File(outputPath, "detectionResult.txt")), true);
+            out.println(text);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            if (out != null)
+                out.close();
+        }
+    }
 }
